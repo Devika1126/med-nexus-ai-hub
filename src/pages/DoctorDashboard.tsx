@@ -14,9 +14,11 @@ import {
   Home,
   Brain,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  Pill
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PrescriptionEditor } from "@/components/prescriptions/PrescriptionEditor";
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -46,6 +48,7 @@ const DoctorDashboard = () => {
     { id: "overview", label: "Overview", icon: Home },
     { id: "patients", label: "Patient List", icon: Users },
     { id: "reports", label: "Lab Reports", icon: FileText },
+    { id: "prescriptions", label: "E-Prescriptions", icon: Pill },
     { id: "ai-suggestions", label: "AI Suggestions", icon: Brain },
     { id: "calendar", label: "Schedule", icon: Calendar },
     { id: "settings", label: "Settings", icon: Settings }
@@ -220,7 +223,11 @@ const DoctorDashboard = () => {
               </div>
             )}
 
-            {activeTab !== "overview" && (
+            {activeTab === "prescriptions" && (
+              <PrescriptionEditor />
+            )}
+
+            {activeTab !== "overview" && activeTab !== "prescriptions" && (
               <div className="text-center py-20">
                 <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText className="w-8 h-8 text-muted-foreground" />

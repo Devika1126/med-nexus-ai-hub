@@ -18,6 +18,7 @@ import {
   TrendingDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PatientPrescriptionView } from "@/components/prescriptions/PatientPrescriptionView";
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ const PatientDashboard = () => {
 
   const sidebarItems = [
     { id: "overview", label: "Health Overview", icon: Home },
+    { id: "prescriptions", label: "E-Prescriptions", icon: FileText },
     { id: "medications", label: "Medications", icon: Pill },
     { id: "appointments", label: "Appointments", icon: Calendar },
     { id: "reports", label: "Lab Reports", icon: FileText },
@@ -250,7 +252,11 @@ const PatientDashboard = () => {
               </div>
             )}
 
-            {activeTab !== "overview" && (
+            {activeTab === "prescriptions" && (
+              <PatientPrescriptionView />
+            )}
+
+            {activeTab !== "overview" && activeTab !== "prescriptions" && (
               <div className="text-center py-20">
                 <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText className="w-8 h-8 text-muted-foreground" />
