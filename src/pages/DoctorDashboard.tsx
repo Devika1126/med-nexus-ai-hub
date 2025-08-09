@@ -19,6 +19,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PrescriptionEditor } from "@/components/prescriptions/PrescriptionEditor";
+import PatientsPanel from "@/components/doctor/PatientList";
+import ReportsPanel from "@/components/doctor/LabReportsPanel";
+import AISuggestions from "@/components/doctor/AISuggestions";
+import Schedule from "@/components/doctor/Schedule";
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
