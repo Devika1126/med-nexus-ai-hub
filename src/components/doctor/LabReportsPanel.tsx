@@ -1,172 +1,225 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, UploadCloud, FileText, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
-
-export interface LabReport {
-  id: string;
-  patientName: string;
-  type: string;
-  date: string; // ISO
-  status: "pending" | "ready";
-  urgent?: boolean;
-  summary: string;
-  annotation?: string;
-}
-
-const initialReports: LabReport[] = [
-  { id: "r-1001", patientName: "Rajesh Kumar", type: "HbA1c", date: "2024-01-12", status: "ready", summary: "Elevated HbA1c indicates poor glycemic control.", annotation: "Increase dose and dietary counseling." },
-  { id: "r-1005", patientName: "Amit Singh", type: "Lipid Profile", date: "2024-01-13", status: "pending", urgent: true, summary: "Awaiting LDL fractional breakdown." },
-  { id: "r-1007", patientName: "Priya Sharma", type: "CBC", date: "2024-01-11", status: "ready", summary: "Within normal range." },
-];
+import { FlaskConical, Upload, Search, FileText, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { mockLabReports, type LabReport } from "@/data/mockData";
 
 export default function LabReportsPanel() {
-  const [reports, setReports] = useState<LabReport[]>(() => {
-    const saved = localStorage.getItem("lab_reports");
-    return saved ? JSON.parse(saved) : initialReports;
-  });
-  const [query, setQuery] = useState("");
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const { toast } = useToast();
+  const [reports, setReports] = useState<LabReport[]>(mockLabReports);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
 
+  // Simulate real-time report arrivals
   useEffect(() => {
-    localStorage.setItem("lab_reports", JSON.stringify(reports));
-  }, [reports]);
+    const interval = setInterval(() => {
+      const shouldAddReport = Math.random() > 0.98; // 2% chance every 5 seconds
+      if (shouldAddReport) {
+        const newReport: LabReport = {
+          id: `lab-${Date.now()}`,
+          patientId: 'pat-new',
+          patientName: `Patient ${Math.floor(Math.random() * 100)}`,
+          doctorId: 'doc-001',
+          doctorName: 'Dr. Rajesh Sharma',
+          testType: ["Blood Test", "Urine Analysis", "X-Ray", "ECG"][Math.floor(Math.random() * 4)],
+          date: new Date().toISOString().split('T')[0],
+          status: Math.random() > 0.7 ? 'critical' : 'pending',
+          urgent: Math.random() > 0.8,
+          summary: "New report awaiting review"
+        };
+        
+        setReports(prev => [newReport, ...prev]);
+        
+        if (newReport.urgent) {
+          toast({
+            title: "Urgent Report Received",
+            description: `${newReport.testType} for ${newReport.patientName}`,
+            variant: "destructive"
+          });
+        }
+      }
+    }, 5000);
 
-  // Simulate realtime: new ready report arrives after 10s
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const newReport: LabReport = {
-        id: "r-rt-" + Date.now(),
-        patientName: "Auto Stream",
-        type: "CRP",
-        date: new Date().toISOString().slice(0, 10),
-        status: "ready",
-        summary: "Realtime update: CRP mildly elevated.",
-      };
-      setReports((prev) => [newReport, ...prev]);
-      toast.info("New lab report received", { description: `${newReport.patientName} • ${newReport.type}` });
-    }, 10000);
-    return () => clearTimeout(t);
-  }, []);
+    return () => clearInterval(interval);
+  }, [toast]);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return reports.filter(
-      (r) =>
-        r.patientName.toLowerCase().includes(q) ||
-        r.type.toLowerCase().includes(q) ||
-        r.status.toLowerCase().includes(q)
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => 
+      report.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      report.testType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      report.status.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [reports, query]);
+  }, [reports, searchQuery]);
 
-  const saveAnnotation = (id: string) => {
-    setReports((prev) => prev.map((r) => (r.id === id ? { ...r, annotation: note } : r)));
-    setActiveId(null);
-    setNote("");
-    toast.success("Annotation saved");
+  const saveAnnotation = (reportId: string, annotation: string) => {
+    setReports(prev => prev.map(report => 
+      report.id === reportId ? { ...report, annotation } : report
+    ));
+    setActiveAnnotation(null);
+    toast({
+      title: "Annotation Saved",
+      description: "Your notes have been added to the report",
+    });
   };
 
-  const markReviewed = (id: string) => {
-    toast.success("Marked as reviewed");
-    setReports((prev) => prev.map((r) => (r.id === id ? { ...r, status: "ready" } : r)));
+  const markReviewed = (reportId: string) => {
+    setReports(prev => prev.map(report => 
+      report.id === reportId ? { ...report, status: 'reviewed' } : report
+    ));
+    toast({
+      title: "Report Reviewed",
+      description: "Report status updated to reviewed",
+    });
   };
 
   const uploadDummy = () => {
-    const dummy: LabReport = {
-      id: "r-up-" + Date.now(),
-      patientName: "Manual Upload",
-      type: "Vitamin D",
-      date: new Date().toISOString().slice(0, 10),
-      status: "ready",
-      summary: "Uploaded report: Vitamin D insufficient.",
-      annotation: "Start supplementation 2000 IU daily.",
+    const dummyReport: LabReport = {
+      id: `lab-${Date.now()}`,
+      patientId: 'pat-dummy',
+      patientName: "Test Patient",
+      doctorId: 'doc-001',
+      doctorName: 'Dr. Rajesh Sharma',
+      testType: "Complete Blood Count",
+      date: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      urgent: false,
+      summary: "Dummy report for testing"
     };
-    setReports((prev) => [dummy, ...prev]);
-    toast.success("Report uploaded");
+
+    setReports(prev => [dummyReport, ...prev]);
+    toast({
+      title: "Test Report Added",
+      description: "Dummy report has been uploaded successfully",
+    });
   };
 
   return (
     <Card className="glass-card border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-foreground">
-          <span className="flex items-center"><FileText className="w-5 h-5 mr-2" /> Lab Reports</span>
-          <div className="flex items-center gap-2">
+          <span className="flex items-center">
+            <FlaskConical className="w-5 h-5 mr-2" />
+            Laboratory Reports
+          </span>
+          <div className="flex items-center space-x-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search by patient, type, status"
-                className="pl-10 w-72 bg-muted/50 border-white/20"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search reports..."
+                className="pl-10 w-64 bg-muted/50 border-white/20"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button onClick={uploadDummy} variant="outline" className="glass-button">
-              <UploadCloud className="w-4 h-4 mr-2" /> Upload
+              <Upload className="w-4 h-4 mr-2" />
+              Add Test Report
             </Button>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[520px] pr-2">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Patient</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Annotation</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r) => (
-                <TableRow key={r.id} className="hover:bg-muted/30">
-                  <TableCell>{r.patientName}</TableCell>
-                  <TableCell>{r.type}</TableCell>
-                  <TableCell>{r.date}</TableCell>
-                  <TableCell>
-                    <Badge variant={r.status === "ready" ? "secondary" : "outline"}>
-                      {r.urgent && <span className="mr-2">⚠️</span>}
-                      {r.status}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Patient</TableHead>
+              <TableHead>Test Type</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredReports.map((report) => (
+              <TableRow key={report.id} className="hover:bg-muted/30">
+                <TableCell className="font-medium text-foreground">{report.patientName}</TableCell>
+                <TableCell className="text-foreground">{report.testType}</TableCell>
+                <TableCell className="text-muted-foreground">{report.date}</TableCell>
+                <TableCell>
+                  <Badge variant={
+                    report.status === 'critical' ? 'destructive' :
+                    report.status === 'completed' ? 'default' :
+                    report.status === 'reviewed' ? 'secondary' : 'outline'
+                  }>
+                    <div className="flex items-center space-x-1">
+                      {report.status === 'critical' && <AlertCircle className="w-3 h-3" />}
+                      {report.status === 'completed' && <CheckCircle className="w-3 h-3" />}
+                      {report.status === 'pending' && <Clock className="w-3 h-3" />}
+                      <span>{report.status}</span>
+                    </div>
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {report.urgent && (
+                    <Badge variant="destructive" className="text-xs">
+                      URGENT
                     </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-[300px] truncate" title={r.annotation}>{r.annotation ?? "—"}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    {r.status !== "ready" ? (
-                      <Button size="sm" variant="ghost" onClick={() => markReviewed(r.id)}>
-                        <CheckCircle2 className="w-4 h-4 mr-1" /> Mark Ready
-                      </Button>
-                    ) : null}
-                    {activeId === r.id ? (
-                      <div className="flex items-center gap-2">
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    {activeAnnotation === report.id ? (
+                      <div className="flex items-center space-x-2">
                         <Textarea
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
-                          placeholder="Add annotation"
-                          className="w-56"
+                          placeholder="Add annotation..."
+                          className="w-40 h-8 text-xs resize-none"
+                          defaultValue={report.annotation || ""}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              saveAnnotation(report.id, (e.target as HTMLTextAreaElement).value);
+                            }
+                          }}
                         />
-                        <Button size="sm" onClick={() => saveAnnotation(r.id)}>Save</Button>
-                        <Button size="sm" variant="ghost" onClick={() => setActiveId(null)}>Cancel</Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            const textarea = document.querySelector(`textarea[defaultValue="${report.annotation || ""}"]`) as HTMLTextAreaElement;
+                            saveAnnotation(report.id, textarea?.value || "");
+                          }}
+                        >
+                          Save
+                        </Button>
                       </div>
                     ) : (
-                      <Button size="sm" variant="outline" onClick={() => { setActiveId(r.id); setNote(r.annotation ?? ""); }}>
-                        Annotate
-                      </Button>
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setActiveAnnotation(report.id)}
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                        {report.status === 'completed' && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => markReviewed(report.id)}
+                          >
+                            Mark Reviewed
+                          </Button>
+                        )}
+                      </>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {filteredReports.length === 0 && (
+          <div className="text-center py-12">
+            <FlaskConical className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No reports found matching your search</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

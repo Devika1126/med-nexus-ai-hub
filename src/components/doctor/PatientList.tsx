@@ -1,88 +1,23 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Search, User, FileText, HeartPulse, Activity } from "lucide-react";
-import { toast } from "sonner";
-
-export interface Patient {
-  id: string;
-  name: string;
-  age: number;
-  gender: "Male" | "Female" | "Other";
-  condition: string;
-  lastVisit: string; // ISO date
-  status: "stable" | "monitoring" | "critical";
-  history: { date: string; note: string }[];
-  labReports: { id: string; type: string; date: string; status: "pending" | "ready"; summary: string }[];
-}
-
-const mockPatients: Patient[] = [
-  {
-    id: "p-001",
-    name: "Rajesh Kumar",
-    age: 45,
-    gender: "Male",
-    condition: "Diabetes",
-    lastVisit: "2024-01-15",
-    status: "critical",
-    history: [
-      { date: "2023-12-10", note: "HbA1c elevated at 8.6%." },
-      { date: "2023-10-06", note: "Metformin started 500mg BID." },
-    ],
-    labReports: [
-      { id: "r-1001", type: "HbA1c", date: "2024-01-12", status: "ready", summary: "Elevated HbA1c indicates poor glycemic control." },
-      { id: "r-1002", type: "Lipid Profile", date: "2023-12-22", status: "ready", summary: "LDL borderline high." },
-    ],
-  },
-  {
-    id: "p-002",
-    name: "Priya Sharma",
-    age: 32,
-    gender: "Female",
-    condition: "Hypertension",
-    lastVisit: "2024-01-14",
-    status: "stable",
-    history: [
-      { date: "2023-11-02", note: "BP controlled on current regimen." },
-    ],
-    labReports: [
-      { id: "r-1003", type: "CBC", date: "2023-11-01", status: "ready", summary: "Within normal limits." },
-    ],
-  },
-  {
-    id: "p-003",
-    name: "Amit Singh",
-    age: 58,
-    gender: "Male",
-    condition: "Heart Disease",
-    lastVisit: "2024-01-13",
-    status: "monitoring",
-    history: [
-      { date: "2023-09-18", note: "Statin therapy initiated." },
-    ],
-    labReports: [
-      { id: "r-1004", type: "ECG", date: "2023-09-18", status: "ready", summary: "Non-specific ST-T changes." },
-    ],
-  },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, User, Calendar, FileText, Activity } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { mockPatients, type Patient } from "@/data/mockData";
 
 export default function PatientList() {
+  const { toast } = useToast();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Patient | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return mockPatients.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.condition.toLowerCase().includes(q) ||
-        String(p.age).includes(q)
+  const filteredPatients = useMemo(() => {
+    return mockPatients.filter(patient =>
+      patient.name.toLowerCase().includes(query.toLowerCase()) ||
+      patient.condition.toLowerCase().includes(query.toLowerCase())
     );
   }, [query]);
 
@@ -90,11 +25,14 @@ export default function PatientList() {
     <Card className="glass-card border-white/10">
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-foreground">
-          <span className="flex items-center"><User className="w-5 h-5 mr-2" /> Patient List</span>
+          <span className="flex items-center">
+            <User className="w-5 h-5 mr-2" />
+            Patient List
+          </span>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, condition, age"
+              placeholder="Search patients..."
               className="pl-10 w-72 bg-muted/50 border-white/20"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -106,7 +44,7 @@ export default function PatientList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>Patient</TableHead>
               <TableHead>Age</TableHead>
               <TableHead>Condition</TableHead>
               <TableHead>Last Visit</TableHead>
@@ -115,80 +53,156 @@ export default function PatientList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((p) => (
-              <TableRow key={p.id} className="hover:bg-muted/30">
-                <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell>{p.age}</TableCell>
-                <TableCell>{p.condition}</TableCell>
-                <TableCell>{p.lastVisit}</TableCell>
+            {filteredPatients.map((patient) => (
+              <TableRow key={patient.id} className="hover:bg-muted/30">
+                <TableCell className="font-medium text-foreground">{patient.name}</TableCell>
+                <TableCell className="text-muted-foreground">{patient.age}</TableCell>
+                <TableCell className="text-muted-foreground">{patient.condition}</TableCell>
+                <TableCell className="text-muted-foreground">{patient.lastVisit}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant={
-                      p.status === "critical" ? "destructive" : p.status === "monitoring" ? "secondary" : "outline"
-                    }
-                  >
-                    {p.status}
+                  <Badge variant={
+                    patient.status === 'critical' ? 'destructive' :
+                    patient.status === 'inactive' ? 'secondary' : 'default'
+                  }>
+                    {patient.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={() => setSelected(p)}>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedPatient(patient)}
+                      >
                         View
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
+                    <DialogContent className="max-w-4xl">
                       <DialogHeader>
-                        <DialogTitle className="text-foreground">{p.name} — Quick Profile</DialogTitle>
+                        <DialogTitle className="text-foreground">
+                          {patient.name} - Patient Profile
+                        </DialogTitle>
                       </DialogHeader>
-                      <ScrollArea className="max-h-[65vh] pr-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="font-semibold mb-2 flex items-center"><Activity className="w-4 h-4 mr-2"/>Overview</h4>
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                              <p>Age: <span className="text-foreground font-medium">{p.age}</span></p>
-                              <p>Gender: <span className="text-foreground font-medium">{p.gender}</span></p>
-                              <p>Primary Condition: <span className="text-foreground font-medium">{p.condition}</span></p>
-                              <p>Last Visit: <span className="text-foreground font-medium">{p.lastVisit}</span></p>
+                      
+                      {selectedPatient && (
+                        <div className="space-y-6">
+                          {/* Patient Overview */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                              <h4 className="font-semibold flex items-center text-foreground">
+                                <User className="w-4 h-4 mr-2" />
+                                Patient Overview
+                              </h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Age:</span>
+                                  <span className="text-foreground">{selectedPatient.age} years</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Gender:</span>
+                                  <span className="text-foreground">{selectedPatient.gender}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Condition:</span>
+                                  <span className="text-foreground">{selectedPatient.condition}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Last Visit:</span>
+                                  <span className="text-foreground">{selectedPatient.lastVisit}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Phone:</span>
+                                  <span className="text-foreground">{selectedPatient.phone}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Email:</span>
+                                  <span className="text-foreground">{selectedPatient.email}</span>
+                                </div>
+                              </div>
                             </div>
-                            <Separator className="my-4" />
-                            <h4 className="font-semibold mb-2 flex items-center"><HeartPulse className="w-4 h-4 mr-2"/>Medical History</h4>
-                            <ul className="space-y-2 text-sm">
-                              {p.history.map((h) => (
-                                <li key={h.date} className="p-3 rounded-md bg-muted/40 border border-white/10">
-                                  <p className="text-foreground font-medium">{h.date}</p>
-                                  <p className="text-muted-foreground">{h.note}</p>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2 flex items-center"><FileText className="w-4 h-4 mr-2"/>Lab Reports</h4>
-                            <ul className="space-y-2 text-sm">
-                              {p.labReports.map((r) => (
-                                <li key={r.id} className="p-3 rounded-md bg-muted/40 border border-white/10">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-foreground font-medium">{r.type} — {r.date}</p>
-                                      <p className="text-muted-foreground">{r.summary}</p>
-                                    </div>
-                                    <Badge variant={r.status === "ready" ? "secondary" : "outline"}>{r.status}</Badge>
+
+                            <div className="space-y-4">
+                              <h4 className="font-semibold flex items-center text-foreground">
+                                <Activity className="w-4 h-4 mr-2" />
+                                Medical History
+                              </h4>
+                              <div className="space-y-4">
+                                {selectedPatient.medicalHistory.map((history, idx) => (
+                                  <div key={idx} className="p-3 bg-muted/50 rounded-lg">
+                                    <p className="text-sm text-muted-foreground">{history}</p>
                                   </div>
-                                </li>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Lab Reports */}
+                          <div className="space-y-4">
+                            <h4 className="font-semibold flex items-center text-foreground">
+                              <FileText className="w-4 h-4 mr-2" />
+                              Recent Lab Reports
+                            </h4>
+                            <div className="space-y-4">
+                              {selectedPatient.labReports.map((report) => (
+                                <div key={report.id} className="p-3 bg-muted/50 rounded-lg">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <p className="font-medium text-foreground">{report.testType}</p>
+                                    <p className="text-xs text-muted-foreground">{report.date}</p>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    Status: {report.status} {report.results && `- ${report.results}`}
+                                  </p>
+                                  {report.summary && (
+                                    <p className="text-xs text-muted-foreground mt-2">{report.summary}</p>
+                                  )}
+                                </div>
                               ))}
-                            </ul>
-                            <Button
-                              className="mt-4"
+                            </div>
+                          </div>
+
+                          {/* Active Prescriptions */}
+                          <div className="space-y-4">
+                            <h4 className="font-semibold flex items-center text-foreground">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              Active Prescriptions
+                            </h4>
+                            <div className="space-y-4">
+                              {selectedPatient.prescriptions.map((prescription) => (
+                                <div key={prescription.id} className="p-3 bg-muted/50 rounded-lg">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <p className="font-medium text-foreground">Prescription #{prescription.id}</p>
+                                    <p className="text-xs text-muted-foreground">{prescription.date}</p>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {prescription.medicines.map((medicine, idx) => (
+                                      <p key={idx} className="text-sm text-muted-foreground">
+                                        {medicine.medicineName} - {medicine.dosage} ({medicine.frequency})
+                                      </p>
+                                    ))}
+                                  </div>
+                                  {prescription.notes && (
+                                    <p className="text-xs text-muted-foreground mt-2">{prescription.notes}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <Button 
                               onClick={() => {
-                                toast.success("Patient opened in AI Suggestions", { description: "Jumping to AI panel..." });
-                                setSelected(p);
+                                toast({
+                                  title: "AI Analysis Started",
+                                  description: `Analyzing ${selectedPatient.name}'s medical data...`,
+                                });
                               }}
                             >
                               Analyze with AI
                             </Button>
                           </div>
                         </div>
-                      </ScrollArea>
+                      )}
                     </DialogContent>
                   </Dialog>
                 </TableCell>
