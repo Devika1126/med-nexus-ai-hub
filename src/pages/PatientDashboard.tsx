@@ -15,14 +15,25 @@ import {
   Home,
   Clock,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Download,
+  CheckCircle,
+  Eye
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PatientPrescriptionView } from "@/components/prescriptions/PatientPrescriptionView";
+import { mockPatients, mockLabReports, mockAppointments, mockPrescriptions, mockMedicines } from "@/data/mockData";
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Mock current patient (in real app, would come from auth context)
+  const currentPatientId = 'pat-001';
+  const currentPatient = mockPatients.find(p => p.id === currentPatientId)!;
+  const patientLabReports = mockLabReports.filter(lr => lr.patientId === currentPatientId);
+  const patientAppointments = mockAppointments.filter(a => a.patientId === currentPatientId);
+  const patientPrescriptions = mockPrescriptions.filter(p => p.patientId === currentPatientId);
 
   const healthMetrics = [
     { title: "Blood Pressure", value: "120/80", status: "normal", trend: "stable", icon: Heart },
@@ -31,21 +42,33 @@ const PatientDashboard = () => {
     { title: "Weight", value: "68 kg", status: "normal", trend: "up", icon: TrendingUp }
   ];
 
-  const medications = [
-    { name: "Metformin", dosage: "500mg", frequency: "Twice daily", nextDose: "2:00 PM", status: "active" },
-    { name: "Lisinopril", dosage: "10mg", frequency: "Once daily", nextDose: "8:00 AM", status: "active" },
-    { name: "Aspirin", dosage: "81mg", frequency: "Once daily", nextDose: "8:00 AM", status: "active" }
-  ];
-
-  const upcomingAppointments = [
-    { doctor: "Dr. Rajesh Kumar", specialty: "Cardiology", date: "Jan 20, 2024", time: "10:00 AM" },
-    { doctor: "Dr. Priya Sharma", specialty: "Endocrinology", date: "Jan 25, 2024", time: "2:30 PM" }
-  ];
+  // Get current medications from prescriptions
+  const currentMedications = patientPrescriptions
+    .filter(p => p.status === 'active')
+    .flatMap(p => p.medicines.map(m => ({
+      name: m.medicineName,
+      dosage: m.dosage,
+      frequency: m.frequency,
+      nextDose: "8:00 AM", // Mock next dose time
+      status: "active"
+    })));
 
   const healthAlerts = [
-    { type: "Medication Reminder", message: "Time to take your evening medication", severity: "low" },
-    { type: "Lab Results", message: "New blood test results available", severity: "medium" },
-    { type: "Appointment", message: "Upcoming cardiology appointment tomorrow", severity: "medium" }
+    ...(patientLabReports.filter(lr => lr.urgent).map(lr => ({
+      type: "Lab Results",
+      message: `Urgent: ${lr.testType} results require attention`,
+      severity: "high" as const
+    }))),
+    ...(patientAppointments.filter(a => new Date(a.date) <= new Date(Date.now() + 24*60*60*1000)).map(a => ({
+      type: "Appointment",
+      message: `Upcoming appointment with ${a.doctorName}`,
+      severity: "medium" as const
+    }))),
+    {
+      type: "Medication Reminder",
+      message: "Time to take your evening medication",
+      severity: "low" as const
+    }
   ];
 
   const sidebarItems = [
@@ -106,7 +129,7 @@ const PatientDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Health Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back, John Doe</p>
+                <p className="text-muted-foreground">Welcome back, {currentPatient.name}</p>
               </div>
               <div className="flex items-center space-x-4">
                 <Button variant="outline" className="glass-button">
@@ -192,27 +215,31 @@ const PatientDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {medications.map((med, index) => (
-                        <div key={index} className="p-4 rounded-lg bg-muted/20 border border-white/10">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-3 h-3 bg-patient rounded-full"></div>
-                                <div>
-                                  <p className="font-semibold text-foreground">{med.name}</p>
-                                  <p className="text-sm text-muted-foreground">{med.dosage} • {med.frequency}</p>
+                      {currentMedications.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">No active medications</p>
+                      ) : (
+                        currentMedications.map((med, index) => (
+                          <div key={index} className="p-4 rounded-lg bg-muted/20 border border-white/10">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-3 h-3 bg-patient rounded-full"></div>
+                                  <div>
+                                    <p className="font-semibold text-foreground">{med.name}</p>
+                                    <p className="text-sm text-muted-foreground">{med.dosage} • {med.frequency}</p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-foreground">Next: {med.nextDose}</p>
-                              <Badge variant="outline" className="mt-1">
-                                {med.status}
-                              </Badge>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-foreground">Next: {med.nextDose}</p>
+                                <Badge variant="outline" className="mt-1">
+                                  {med.status}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -232,20 +259,27 @@ const PatientDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {upcomingAppointments.map((apt, index) => (
-                        <div key={index} className="p-4 rounded-lg bg-muted/20 border border-white/10">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-foreground">{apt.doctor}</p>
-                              <p className="text-sm text-patient">{apt.specialty}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-foreground">{apt.date}</p>
-                              <p className="text-sm text-muted-foreground">{apt.time}</p>
+                      {patientAppointments.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4">No upcoming appointments</p>
+                      ) : (
+                        patientAppointments.map((apt, index) => (
+                          <div key={index} className="p-4 rounded-lg bg-muted/20 border border-white/10">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold text-foreground">{apt.doctorName}</p>
+                                <p className="text-sm text-patient">Appointment • {apt.type}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-foreground">{new Date(apt.date).toLocaleDateString()}</p>
+                                <p className="text-sm text-muted-foreground">{apt.time}</p>
+                                <Badge variant="outline" className="mt-1">
+                                  {apt.status}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -256,7 +290,252 @@ const PatientDashboard = () => {
               <PatientPrescriptionView />
             )}
 
-            {activeTab !== "overview" && activeTab !== "prescriptions" && (
+            {activeTab === "appointments" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-foreground">My Appointments</h2>
+                  <Button className="bg-patient hover:bg-patient/90">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book New Appointment
+                  </Button>
+                </div>
+                {patientAppointments.map((appointment) => (
+                  <Card key={appointment.id} className="glass-card border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-patient/20 rounded-full flex items-center justify-center">
+                            <Calendar className="w-6 h-6 text-patient" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">{appointment.doctorName}</p>
+                            <p className="text-sm text-muted-foreground">{appointment.type} appointment</p>
+                            <p className="text-sm text-muted-foreground">{new Date(appointment.date).toLocaleDateString()} at {appointment.time}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline" className={
+                            appointment.status === 'confirmed' ? 'bg-success/20 text-success' :
+                            appointment.status === 'scheduled' ? 'bg-warning/20 text-warning' :
+                            appointment.status === 'completed' ? 'bg-muted/20 text-muted-foreground' :
+                            'bg-destructive/20 text-destructive'
+                          }>
+                            {appointment.status}
+                          </Badge>
+                          <div className="flex space-x-2 mt-2">
+                            <Button variant="ghost" size="sm">
+                              Reschedule
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive">
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      {appointment.notes && (
+                        <div className="mt-4 p-3 bg-muted/20 rounded-lg">
+                          <p className="text-sm text-muted-foreground">{appointment.notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "reports" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-foreground">Lab Reports</h2>
+                  <Button variant="outline" className="glass-button">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download All
+                  </Button>
+                </div>
+                {patientLabReports.map((report) => (
+                  <Card key={report.id} className="glass-card border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-lab/20 rounded-full flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-lab" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">{report.testType}</p>
+                            <p className="text-sm text-muted-foreground">By {report.doctorName}</p>
+                            <p className="text-sm text-muted-foreground">{new Date(report.date).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline" className={
+                            report.status === 'completed' ? 'bg-success/20 text-success' :
+                            report.status === 'pending' ? 'bg-warning/20 text-warning' :
+                            report.status === 'critical' ? 'bg-destructive/20 text-destructive' :
+                            'bg-info/20 text-info'
+                          }>
+                            {report.status}
+                          </Badge>
+                          {report.urgent && (
+                            <Badge variant="destructive" className="ml-2">
+                              URGENT
+                            </Badge>
+                          )}
+                          <div className="flex space-x-2 mt-2">
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Download className="w-4 h-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      {report.summary && (
+                        <div className="mt-4 p-3 bg-muted/20 rounded-lg">
+                          <p className="text-sm font-medium text-foreground mb-1">Summary:</p>
+                          <p className="text-sm text-muted-foreground">{report.summary}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "medications" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-foreground">My Medications</h2>
+                  <Button className="bg-patient hover:bg-patient/90">
+                    <Pill className="w-4 h-4 mr-2" />
+                    Add Medication
+                  </Button>
+                </div>
+                {currentMedications.map((medication, index) => (
+                  <Card key={index} className="glass-card border-white/10">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-patient/20 rounded-full flex items-center justify-center">
+                            <Pill className="w-6 h-6 text-patient" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground">{medication.name}</p>
+                            <p className="text-sm text-muted-foreground">{medication.dosage} • {medication.frequency}</p>
+                            <p className="text-sm text-muted-foreground">Next dose: {medication.nextDose}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline" className="bg-success/20 text-success">
+                            {medication.status}
+                          </Badge>
+                          <div className="flex space-x-2 mt-2">
+                            <Button variant="ghost" size="sm">
+                              Set Reminder
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              Mark Taken
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "settings" && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-foreground">Settings</h2>
+                
+                <Card className="glass-card border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-foreground">Personal Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Full Name</label>
+                        <p className="text-muted-foreground">{currentPatient.name}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Age</label>
+                        <p className="text-muted-foreground">{currentPatient.age} years</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Gender</label>
+                        <p className="text-muted-foreground">{currentPatient.gender}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Phone</label>
+                        <p className="text-muted-foreground">{currentPatient.phone}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Email</label>
+                        <p className="text-muted-foreground">{currentPatient.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-foreground">Condition</label>
+                        <p className="text-muted-foreground">{currentPatient.condition}</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="glass-button">
+                      Edit Profile
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-card border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-foreground">Medical History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {currentPatient.medicalHistory.map((item, index) => (
+                        <div key={index} className="p-3 bg-muted/20 rounded-lg border border-white/10">
+                          <p className="text-sm text-foreground">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-card border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-foreground">Privacy & Notifications</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">Email Notifications</p>
+                        <p className="text-sm text-muted-foreground">Receive appointment reminders via email</p>
+                      </div>
+                      <Button variant="outline" size="sm">Toggle</Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">SMS Reminders</p>
+                        <p className="text-sm text-muted-foreground">Get medication reminders via SMS</p>
+                      </div>
+                      <Button variant="outline" size="sm">Toggle</Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">Data Sharing</p>
+                        <p className="text-sm text-muted-foreground">Share data with healthcare providers</p>
+                      </div>
+                      <Button variant="outline" size="sm">Manage</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab !== "overview" && activeTab !== "prescriptions" && activeTab !== "appointments" && 
+             activeTab !== "reports" && activeTab !== "medications" && activeTab !== "settings" && (
               <div className="text-center py-20">
                 <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText className="w-8 h-8 text-muted-foreground" />

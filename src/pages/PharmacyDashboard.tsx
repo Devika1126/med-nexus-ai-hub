@@ -16,35 +16,59 @@ import {
   Search,
   ChevronRight,
   Store,
-  Users
+  Users,
+  TrendingUp,
+  AlertTriangle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InventoryManager from "@/components/pharmacy/InventoryManager";
 import OrderHandler from "@/components/pharmacy/OrderHandler";
+import { mockPharmacyOrders, mockMedicines } from "@/data/mockData";
 
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
   const stats = [
-    { title: "Total Orders", value: "45", icon: Package, color: "primary" },
-    { title: "Pending Orders", value: "8", icon: Clock, color: "warning" },
-    { title: "Medicines in Stock", value: "234", icon: Pill, color: "success" },
-    { title: "Today's Revenue", value: "₹12,450", icon: BarChart3, color: "lab" }
+    { 
+      title: "Total Orders", 
+      value: mockPharmacyOrders.length.toString(), 
+      icon: Package, 
+      color: "primary" 
+    },
+    { 
+      title: "Pending Orders", 
+      value: mockPharmacyOrders.filter(o => o.status === 'pending').length.toString(), 
+      icon: Clock, 
+      color: "warning" 
+    },
+    { 
+      title: "Medicines in Stock", 
+      value: mockMedicines.filter(m => m.stockQuantity > 0).length.toString(), 
+      icon: Pill, 
+      color: "success" 
+    },
+    { 
+      title: "Today's Revenue", 
+      value: `₹${mockPharmacyOrders.filter(o => o.orderDate === new Date().toISOString().split('T')[0]).reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}`, 
+      icon: TrendingUp, 
+      color: "lab" 
+    }
   ];
 
-  const recentOrders = [
-    { id: "ORD001", patient: "Rajesh Kumar", medicines: 3, amount: 450, status: "pending", time: "10:30 AM" },
-    { id: "ORD002", patient: "Priya Sharma", medicines: 1, amount: 85, status: "confirmed", time: "11:15 AM" },
-    { id: "ORD003", patient: "Amit Singh", medicines: 2, amount: 320, status: "fulfilled", time: "12:00 PM" },
-    { id: "ORD004", patient: "Sunita Devi", medicines: 4, amount: 275, status: "pending", time: "12:30 PM" }
-  ];
+  const recentOrders = mockPharmacyOrders.slice(-4); // Last 4 orders
 
-  const lowStockAlerts = [
-    { medicine: "Paracetamol 500mg", currentStock: 15, minLevel: 50, urgency: "high" },
-    { medicine: "Amoxicillin 250mg", currentStock: 8, minLevel: 25, urgency: "critical" },
-    { medicine: "Metformin 500mg", currentStock: 22, minLevel: 30, urgency: "medium" }
-  ];
+  const lowStockAlerts = mockMedicines
+    .filter(med => med.stockQuantity <= med.minStockLevel)
+    .slice(0, 3) // Show top 3 alerts
+    .map(med => ({
+      medicine: `${med.name} ${med.strength}`,
+      currentStock: med.stockQuantity,
+      minLevel: med.minStockLevel,
+      urgency: med.stockQuantity === 0 ? 'critical' as const : 
+               med.stockQuantity <= med.minStockLevel * 0.5 ? 'high' as const : 
+               'medium' as const
+    }));
 
   const sidebarItems = [
     { id: "overview", label: "Overview", icon: Home },
@@ -211,7 +235,7 @@ const PharmacyDashboard = () => {
                             <div>
                               <p className="font-medium text-foreground">{order.id}</p>
                               <p className="text-sm text-muted-foreground">
-                                {order.patient} • {order.medicines} medicines • ₹{order.amount}
+                                {order.patientName} • {order.medicines.length} medicines • ₹{order.totalAmount}
                               </p>
                             </div>
                           </div>
@@ -219,11 +243,14 @@ const PharmacyDashboard = () => {
                             <Badge variant={
                               order.status === 'pending' ? 'secondary' :
                               order.status === 'confirmed' ? 'default' :
-                              order.status === 'fulfilled' ? 'default' : 'secondary'
+                              order.status === 'ready' ? 'default' :
+                              order.status === 'delivered' ? 'outline' : 'secondary'
                             }>
                               {order.status}
                             </Badge>
-                            <p className="text-xs text-muted-foreground mt-1">{order.time}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(order.orderDate).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                       ))}

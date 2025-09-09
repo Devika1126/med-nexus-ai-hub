@@ -14,9 +14,12 @@ import {
   AlertCircle,
   Search,
   Download,
-  ExternalLink
+  ExternalLink,
+  Eye,
+  Edit
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { mockLabReports, mockPatients, mockDoctors } from "@/data/mockData";
 
 const LabDashboard = () => {
   const navigate = useNavigate();
@@ -24,50 +27,34 @@ const LabDashboard = () => {
   const [dragActive, setDragActive] = useState(false);
 
   const stats = [
-    { title: "Reports Uploaded", value: "156", icon: Upload, trend: "+12 today" },
-    { title: "Pending Reviews", value: "8", icon: Clock, trend: "2 urgent" },
-    { title: "Processed Today", value: "23", icon: CheckCircle, trend: "+5 from yesterday" },
-    { title: "Integration Status", value: "98%", icon: FlaskConical, trend: "API Active" }
-  ];
-
-  const recentReports = [
-    {
-      id: "LAB001",
-      patient: "Rajesh Kumar",
-      doctor: "Dr. Smith",
-      testType: "Complete Blood Count",
-      status: "processed",
-      uploadTime: "2 hours ago",
-      priority: "normal"
+    { 
+      title: "Reports Uploaded", 
+      value: mockLabReports.length.toString(), 
+      icon: Upload, 
+      trend: `${mockLabReports.filter(r => new Date(r.date) >= new Date(Date.now() - 24*60*60*1000)).length} today`
     },
-    {
-      id: "LAB002", 
-      patient: "Priya Sharma",
-      doctor: "Dr. Johnson",
-      testType: "Lipid Profile",
-      status: "pending",
-      uploadTime: "4 hours ago",
-      priority: "urgent"
+    { 
+      title: "Pending Reviews", 
+      value: mockLabReports.filter(r => r.status === 'pending').length.toString(), 
+      icon: Clock, 
+      trend: `${mockLabReports.filter(r => r.urgent).length} urgent` 
     },
-    {
-      id: "LAB003",
-      patient: "Amit Singh", 
-      doctor: "Dr. Brown",
-      testType: "HbA1c",
-      status: "processed",
-      uploadTime: "6 hours ago",
-      priority: "normal"
+    { 
+      title: "Processed Today", 
+      value: mockLabReports.filter(r => r.status === 'completed' || r.status === 'reviewed').length.toString(), 
+      icon: CheckCircle, 
+      trend: "+3 from yesterday" 
     },
-    {
-      id: "LAB004",
-      patient: "Sunita Devi",
-      doctor: "Dr. Wilson",
-      testType: "Thyroid Function",
-      status: "review",
-      uploadTime: "8 hours ago",
-      priority: "normal"
+    { 
+      title: "Critical Results", 
+      value: mockLabReports.filter(r => r.status === 'critical').length.toString(), 
+      icon: AlertCircle, 
+      trend: "Requires attention" 
     }
   ];
+
+  // Use real lab reports from mock data
+  const recentReports = mockLabReports.slice(-10); // Show last 10 reports
 
   const sidebarItems = [
     { id: "overview", label: "Dashboard", icon: Home },
@@ -210,10 +197,13 @@ const LabDashboard = () => {
                               <div>
                                 <p className="font-medium text-foreground">{report.id}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {report.patient} • {report.testType}
+                                  {report.patientName} • {report.testType}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  Assigned to: {report.doctor}
+                                  Assigned to: {report.doctorName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(report.date).toLocaleDateString()}
                                 </p>
                               </div>
                             </div>
@@ -222,38 +212,48 @@ const LabDashboard = () => {
                                 <div className="flex items-center space-x-2">
                                   <Badge 
                                     variant={
-                                      report.status === 'processed' ? 'default' :
+                                      report.status === 'completed' || report.status === 'reviewed' ? 'default' :
                                       report.status === 'pending' ? 'secondary' :
-                                      'outline'
+                                      report.status === 'critical' ? 'destructive' : 'outline'
                                     }
                                     className={
-                                      report.status === 'processed' ? 'bg-success/20 text-success' :
+                                      report.status === 'completed' || report.status === 'reviewed' ? 'bg-success/20 text-success' :
                                       report.status === 'pending' ? 'bg-warning/20 text-warning' :
-                                      ''
+                                      report.status === 'critical' ? 'bg-destructive/20 text-destructive' : ''
                                     }
                                   >
                                     {report.status}
                                   </Badge>
-                                  {report.priority === 'urgent' && (
+                                  {report.urgent && (
                                     <Badge variant="destructive" className="text-xs">
                                       URGENT
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {report.uploadTime}
-                                </p>
                               </div>
                               <div className="flex space-x-2">
                                 <Button variant="ghost" size="sm">
-                                  <Download className="w-4 h-4" />
+                                  <Eye className="w-4 h-4" />
                                 </Button>
                                 <Button variant="ghost" size="sm">
-                                  <ExternalLink className="w-4 h-4" />
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Download className="w-4 h-4" />
                                 </Button>
                               </div>
                             </div>
                           </div>
+                          {report.summary && (
+                            <div className="mt-3 p-2 bg-muted/30 rounded text-xs text-muted-foreground">
+                              <strong>Summary:</strong> {report.summary}
+                            </div>
+                          )}
+                          {report.annotation && (
+                            <div className="mt-2 p-2 bg-info/10 rounded text-xs text-info">
+                              <strong>Note:</strong> {report.annotation}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

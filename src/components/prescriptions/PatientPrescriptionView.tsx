@@ -1,336 +1,184 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { 
   FileText, 
-  Download, 
-  Share2, 
-  MessageCircle, 
-  Bell,
+  Clock, 
+  Pill, 
+  Download,
+  Eye,
   CheckCircle,
-  AlertTriangle,
-  XCircle,
-  Clock,
-  Calendar,
-  Pill,
-  QrCode,
-  Heart,
-  Languages
+  AlertCircle
 } from "lucide-react";
-
-interface PrescribedMedicine {
-  id: string;
-  name: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  compatibilityScore: number;
-  status: 'safe' | 'caution' | 'unsafe';
-  sideEffects: string[];
-  warnings: string[];
-  explanation: string;
-  hindiExplanation: string;
-}
-
-interface Prescription {
-  id: string;
-  doctorName: string;
-  doctorId: string;
-  date: string;
-  diagnosis: string;
-  medicines: PrescribedMedicine[];
-  notes: string;
-  qrCode: string;
-}
+import { mockPrescriptions, mockPatients, mockMedicines, type Prescription } from "@/data/mockData";
 
 export const PatientPrescriptionView = () => {
-  const [selectedPrescription, setSelectedPrescription] = useState<string>("1");
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
-
-  // Mock prescription data
-  const prescriptions: Prescription[] = [
-    {
-      id: "1",
-      doctorName: "Dr. Rajesh Kumar",
-      doctorId: "NMC123456",
-      date: "2024-01-15",
-      diagnosis: "Hypertension with mild kidney dysfunction",
-      notes: "Take medicines with food. Monitor blood pressure daily. Return for follow-up in 2 weeks.",
-      qrCode: "QR123456789",
-      medicines: [
-        {
-          id: "m1",
-          name: "Amlodipine",
-          dosage: "5mg",
-          frequency: "Once daily",
-          duration: "30 days",
-          compatibilityScore: 92,
-          status: 'safe',
-          sideEffects: ["Mild ankle swelling", "Dizziness"],
-          warnings: [],
-          explanation: "This blood pressure medicine is safe for you based on your kidney function.",
-          hindiExplanation: "आपकी किडनी के कार्य के आधार पर यह रक्तचाप की दवा आपके लिए सुरक्षित है।"
-        },
-        {
-          id: "m2",
-          name: "Aspirin",
-          dosage: "75mg",
-          frequency: "Once daily",
-          duration: "Ongoing",
-          compatibilityScore: 78,
-          status: 'caution',
-          sideEffects: ["Stomach irritation", "Bleeding risk"],
-          warnings: ["Monitor for signs of bleeding"],
-          explanation: "Blood thinner to prevent heart problems. Take with food to reduce stomach upset.",
-          hindiExplanation: "हृदय की समस्याओं को रोकने के लिए रक्त पतला करने वाली दवा। पेट की समस्या कम करने के लिए खाने के साथ लें।"
-        }
-      ]
-    }
-  ];
-
-  const currentPrescription = prescriptions.find(p => p.id === selectedPrescription);
+  // Mock current patient (in real app, would come from auth context)
+  const currentPatientId = 'pat-001';
+  const currentPatient = mockPatients.find(p => p.id === currentPatientId);
+  const patientPrescriptions = mockPrescriptions.filter(p => p.patientId === currentPatientId);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'safe': return 'text-success';
-      case 'caution': return 'text-warning';
-      case 'unsafe': return 'text-destructive';
-      default: return 'text-muted-foreground';
+      case 'active':
+        return 'bg-success/20 text-success';
+      case 'completed':
+        return 'bg-muted/50 text-muted-foreground';
+      case 'cancelled':
+        return 'bg-destructive/20 text-destructive';
+      default:
+        return 'bg-secondary/20 text-secondary-foreground';
     }
   };
 
-  const getStatusIcon = (status: string, size = "w-4 h-4") => {
-    switch (status) {
-      case 'safe': return <CheckCircle className={size} />;
-      case 'caution': return <AlertTriangle className={size} />;
-      case 'unsafe': return <XCircle className={size} />;
-      default: return null;
-    }
+  const getMedicineAvailability = (medicineId: string) => {
+    const medicine = mockMedicines.find(m => m.id === medicineId);
+    if (!medicine) return { available: false, stock: 0 };
+    
+    return {
+      available: medicine.stockQuantity > 0,
+      stock: medicine.stockQuantity,
+      lowStock: medicine.stockQuantity <= medicine.minStockLevel
+    };
   };
-
-  const getRiskEmoji = (status: string) => {
-    switch (status) {
-      case 'safe': return '😊';
-      case 'caution': return '😐';
-      case 'unsafe': return '😟';
-      default: return '😊';
-    }
-  };
-
-  if (!currentPrescription) return null;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card className="glass-card border-white/10">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-foreground">
-              <FileText className="w-5 h-5 mr-2" />
-              E-Prescription
-            </CardTitle>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-                className="glass-button"
-              >
-                <Languages className="w-4 h-4 mr-2" />
-                {language === 'en' ? 'हिंदी' : 'English'}
-              </Button>
-              <Button variant="outline" size="sm" className="glass-button">
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-              <Button variant="outline" size="sm" className="glass-button">
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Doctor</p>
-              <p className="font-semibold text-foreground">{currentPrescription.doctorName}</p>
-              <p className="text-xs text-muted-foreground">NMC ID: {currentPrescription.doctorId}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Date Prescribed</p>
-              <p className="font-semibold text-foreground">{currentPrescription.date}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Prescription ID</p>
-              <div className="flex items-center space-x-2">
-                <p className="font-semibold text-foreground">{currentPrescription.id}</p>
-                <QrCode className="w-4 h-4 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-foreground">My Prescriptions</h2>
+        <Button variant="outline" className="glass-button">
+          <Download className="w-4 h-4 mr-2" />
+          Download History
+        </Button>
+      </div>
 
-      {/* Diagnosis */}
-      <Card className="glass-card border-white/10">
-        <CardHeader>
-          <CardTitle className="text-foreground">Diagnosis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-foreground">{currentPrescription.diagnosis}</p>
-        </CardContent>
-      </Card>
-
-      {/* Medicine List */}
-      <Card className="glass-card border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center text-foreground">
-            <Pill className="w-5 h-5 mr-2" />
-            Prescribed Medicines
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {currentPrescription.medicines.map((medicine) => (
-            <Card key={medicine.id} className="bg-muted/20 border-white/10">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h4 className="text-lg font-semibold text-foreground">{medicine.name}</h4>
-                      <span className="text-2xl">{getRiskEmoji(medicine.status)}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 mb-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Dosage</p>
-                        <p className="text-sm font-medium text-foreground">{medicine.dosage}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Frequency</p>
-                        <p className="text-sm font-medium text-foreground">{medicine.frequency}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Duration</p>
-                        <p className="text-sm font-medium text-foreground">{medicine.duration}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className={getStatusColor(medicine.status)}>
-                        {getStatusIcon(medicine.status)}
-                      </span>
-                      <span className="text-sm font-medium text-foreground">
-                        {medicine.compatibilityScore}%
-                      </span>
-                    </div>
-                    <Badge variant={medicine.status === 'safe' ? 'outline' : 
-                                  medicine.status === 'caution' ? 'secondary' : 'destructive'}>
-                      {medicine.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Compatibility Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Safety for your condition</span>
-                    <span className="text-sm font-medium text-foreground">{medicine.compatibilityScore}%</span>
-                  </div>
-                  <Progress value={medicine.compatibilityScore} className="h-2" />
-                </div>
-
-                {/* Explanation */}
-                <div className="p-3 rounded-lg bg-background/30 border border-white/10 mb-4">
-                  <div className="flex items-start space-x-2">
-                    <Heart className="w-4 h-4 text-patient mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">
-                        {language === 'en' ? 'What this means for you:' : 'आपके लिए इसका मतलब:'}
-                      </p>
-                      <p className="text-sm text-foreground">
-                        {language === 'en' ? medicine.explanation : medicine.hindiExplanation}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Warnings */}
-                {medicine.warnings.length > 0 && (
-                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 mb-4">
-                    <div className="flex items-start space-x-2">
-                      <AlertTriangle className="w-4 h-4 text-warning mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground mb-1">
-                          {language === 'en' ? 'Important Warnings:' : 'महत्वपूर्ण चेतावनी:'}
-                        </p>
-                        <ul className="text-sm text-foreground space-y-1">
-                          {medicine.warnings.map((warning, idx) => (
-                            <li key={idx}>• {warning}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Side Effects */}
-                {medicine.sideEffects.length > 0 && (
-                  <div className="text-sm">
-                    <p className="font-medium text-foreground mb-2">
-                      {language === 'en' ? 'Possible side effects:' : 'संभावित दुष्प्रभाव:'}
+      {patientPrescriptions.length === 0 ? (
+        <Card className="glass-card border-white/10">
+          <CardContent className="text-center py-12">
+            <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Prescriptions Found</h3>
+            <p className="text-muted-foreground">Your prescriptions will appear here once your doctor creates them.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {patientPrescriptions.map((prescription) => (
+            <Card key={prescription.id} className="glass-card border-white/10">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-foreground flex items-center">
+                      <FileText className="w-5 h-5 mr-2" />
+                      Prescription #{prescription.id}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Prescribed by {prescription.doctorName} on {new Date(prescription.date).toLocaleDateString()}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {medicine.sideEffects.map((effect, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {effect}
-                        </Badge>
-                      ))}
-                    </div>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant="outline" 
+                      className={getStatusColor(prescription.status)}
+                    >
+                      {prescription.status}
+                    </Badge>
+                    <Button variant="ghost" size="sm">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-foreground flex items-center">
+                    <Pill className="w-4 h-4 mr-2" />
+                    Prescribed Medications
+                  </h4>
+                  {prescription.medicines.map((medicine, index) => {
+                    const availability = getMedicineAvailability(medicine.medicineId);
+                    return (
+                      <div key={index} className="p-3 rounded-lg bg-muted/20 border border-white/10">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-3 h-3 bg-patient rounded-full"></div>
+                              <div>
+                                <p className="font-medium text-foreground">{medicine.medicineName}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {medicine.dosage} • {medicine.frequency} • {medicine.duration}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Quantity: {medicine.quantity}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center space-x-2 mb-1">
+                              {availability.available ? (
+                                <Badge variant="outline" className="bg-success/20 text-success text-xs">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Available
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-destructive/20 text-destructive text-xs">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Out of Stock
+                                </Badge>
+                              )}
+                              {availability.lowStock && availability.available && (
+                                <Badge variant="outline" className="bg-warning/20 text-warning text-xs">
+                                  Low Stock
+                                </Badge>
+                              )}
+                            </div>
+                            {availability.available && (
+                              <p className="text-xs text-muted-foreground">
+                                Stock: {availability.stock}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {prescription.notes && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium text-foreground mb-2">Doctor's Notes</h4>
+                      <p className="text-sm text-muted-foreground p-3 bg-muted/20 rounded-lg border border-white/10">
+                        {prescription.notes}
+                      </p>
+                    </div>
+                  </>
                 )}
 
-                {/* Actions */}
-                <div className="flex space-x-2 mt-4">
-                  <Button size="sm" variant="outline" className="glass-button">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Set Reminder
-                  </Button>
-                  <Button size="sm" variant="outline" className="glass-button">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Ask Doctor
-                  </Button>
+                <Separator />
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>Prescribed on {new Date(prescription.date).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" className="glass-button">
+                      Download PDF
+                    </Button>
+                    <Button size="sm" className="bg-patient hover:bg-patient/90">
+                      Order from Pharmacy
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
-        </CardContent>
-      </Card>
-
-      {/* Doctor Notes */}
-      <Card className="glass-card border-white/10">
-        <CardHeader>
-          <CardTitle className="text-foreground">Doctor's Instructions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-foreground">{currentPrescription.notes}</p>
-        </CardContent>
-      </Card>
-
-      {/* Actions */}
-      <div className="flex justify-center space-x-4">
-        <Button className="bg-patient hover:bg-patient/90">
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Chat with Doctor
-        </Button>
-        <Button variant="outline" className="glass-button">
-          <Calendar className="w-4 h-4 mr-2" />
-          Book Follow-up
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
