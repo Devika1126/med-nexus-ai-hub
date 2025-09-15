@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { EnhancedProgress } from "@/components/ui/enhanced-progress";
 import { 
   Brain, 
   AlertTriangle, 
@@ -48,8 +48,8 @@ export const CompatibilityChecker = ({ results, onOverride, onShowAlternatives }
   };
 
   const getProgressColor = (score: number) => {
-    if (score >= 70) return 'bg-success';
-    if (score >= 40) return 'bg-warning';
+    if (score >= 85) return 'bg-success';
+    if (score >= 70) return 'bg-warning';
     return 'bg-destructive';
   };
 
@@ -83,11 +83,17 @@ export const CompatibilityChecker = ({ results, onOverride, onShowAlternatives }
               </div>
             </div>
 
-            {/* Progress Bar */}
+            {/* Enhanced Progress Bar with Color Coding */}
             <div className="mb-4">
-              <Progress 
-                value={result.score} 
-                className="h-2"
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Compatibility Score</span>
+                <span className="text-xs font-medium text-foreground">{result.score}%</span>
+              </div>
+              <EnhancedProgress 
+                value={result.score}
+                colorScheme="medical"
+                showGradient={true}
+                className="h-4"
               />
             </div>
 

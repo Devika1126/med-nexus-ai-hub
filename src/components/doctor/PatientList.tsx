@@ -70,13 +70,13 @@ export default function PatientList() {
                 <TableCell className="text-right">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setSelectedPatient(patient)}
-                      >
-                        View
-                      </Button>
+                <Button 
+                  size="sm" 
+                  className="glass-button"
+                  onClick={() => window.location.href = `/doctor/patient/${patient.id}`}
+                >
+                  View Profile
+                </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl">
                       <DialogHeader>
@@ -189,7 +189,15 @@ export default function PatientList() {
                             </div>
                           </div>
 
-                          <div className="flex justify-end">
+                          <div className="flex justify-end space-x-2">
+                            <Button 
+                              variant="outline"
+                              onClick={() => {
+                                window.location.href = `/doctor/patient/${selectedPatient.id}`;
+                              }}
+                            >
+                              Open Full Profile
+                            </Button>
                             <Button 
                               onClick={() => {
                                 toast({
