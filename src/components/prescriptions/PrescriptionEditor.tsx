@@ -45,6 +45,7 @@ export const PrescriptionEditor = () => {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [showCompatibilityCheck, setShowCompatibilityCheck] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+  const [compatibilityResults, setCompatibilityResults] = useState<any[]>([]);
 
   // Mock patient report data
   const patientReport: PatientReport = {
@@ -81,33 +82,119 @@ export const PrescriptionEditor = () => {
   };
 
   const analyzeCompatibility = (medicine: Medicine) => {
-    // Mock AI analysis based on patient report
-    let score = 85;
-    let status: 'safe' | 'caution' | 'unsafe' = 'safe';
-    let sideEffects: string[] = [];
-    let warnings: string[] = [];
+    // Enhanced AI analysis with synthetic data generation
+    const generateCompatibilityResults = () => {
+      const medicineName = medicine.name.toLowerCase();
+      let score = 85;
+      let status: 'safe' | 'caution' | 'unsafe' = 'safe';
+      let reasons: string[] = [];
+      let alternatives: string[] = [];
+      let riskLevel: 'low' | 'moderate' | 'high' = 'low';
+      let explanation = '';
 
-    // Simulate AI logic
-    if (medicine.name.toLowerCase().includes('ibuprofen') && patientReport.creatinine > 1.5) {
-      score = 25;
-      status = 'unsafe';
-      warnings.push('High creatinine levels - kidney damage risk');
-      sideEffects.push('Acute kidney injury', 'Elevated creatinine', 'Fluid retention');
-    } else if (medicine.name.toLowerCase().includes('metformin') && patientReport.creatinine > 1.4) {
-      score = 45;
-      status = 'caution';
-      warnings.push('Monitor kidney function closely');
-      sideEffects.push('Lactic acidosis risk', 'GI upset');
-    } else if (medicine.name.toLowerCase().includes('aspirin')) {
-      score = 90;
-      status = 'safe';
-      sideEffects.push('Mild GI irritation', 'Bleeding risk (low)');
-    }
+      // Comprehensive drug interaction logic
+      if (medicineName.includes('ibuprofen')) {
+        if (patientReport.creatinine > 1.5) {
+          score = 25;
+          status = 'unsafe';
+          riskLevel = 'high';
+          reasons = [
+            'Elevated creatinine (1.8 mg/dL) indicates kidney impairment',
+            'NSAIDs can worsen kidney function and cause acute kidney injury',
+            'Patient\'s blood pressure is already elevated (140/90)'
+          ];
+          alternatives = ['Acetaminophen 500mg', 'Topical diclofenac gel', 'Physical therapy'];
+          explanation = 'Given the patient\'s elevated creatinine levels, ibuprofen poses significant nephrotoxic risk and should be avoided.';
+        }
+      } else if (medicineName.includes('metformin')) {
+        if (patientReport.creatinine > 1.4) {
+          score = 45;
+          status = 'caution';
+          riskLevel = 'moderate';
+          reasons = [
+            'Elevated creatinine may increase lactic acidosis risk',
+            'Kidney function needs close monitoring',
+            'Consider dose adjustment based on eGFR'
+          ];
+          alternatives = ['Empagliflozin 10mg', 'Sitagliptin 50mg', 'Insulin therapy'];
+          explanation = 'Metformin can be used with caution but requires dose adjustment and frequent kidney function monitoring.';
+        }
+      } else if (medicineName.includes('aspirin')) {
+        score = 88;
+        status = 'safe';
+        riskLevel = 'low';
+        reasons = [
+          'Low-dose aspirin is generally well tolerated',
+          'Benefits outweigh risks for cardiovascular protection',
+          'Monitor for GI symptoms'
+        ];
+        alternatives = ['Clopidogrel 75mg', 'Atorvastatin 20mg'];
+        explanation = 'Aspirin is safe for this patient profile and provides cardiovascular benefits.';
+      } else if (medicineName.includes('lisinopril') || medicineName.includes('ace')) {
+        if (patientReport.creatinine > 1.5) {
+          score = 55;
+          status = 'caution';
+          riskLevel = 'moderate';
+          reasons = [
+            'ACE inhibitors can further elevate creatinine',
+            'Start with low dose and monitor closely',
+            'May cause hyperkalemia'
+          ];
+          alternatives = ['Amlodipine 5mg', 'Hydrochlorothiazide 25mg', 'Losartan 50mg'];
+          explanation = 'ACE inhibitors require careful monitoring in patients with kidney impairment.';
+        } else {
+          score = 92;
+          status = 'safe';
+          riskLevel = 'low';
+          reasons = [
+            'Excellent choice for hypertension management',
+            'Kidney protective in diabetes',
+            'Well-tolerated first-line therapy'
+          ];
+          explanation = 'ACE inhibitors are ideal for this patient\'s blood pressure control.';
+        }
+      } else if (medicineName.includes('warfarin')) {
+        score = 40;
+        status = 'caution';
+        riskLevel = 'moderate';
+        reasons = [
+          'Requires frequent INR monitoring',
+          'Multiple drug and food interactions',
+          'Patient\'s kidney function may affect metabolism'
+        ];
+        alternatives = ['Apixaban 5mg twice daily', 'Rivaroxaban 20mg daily', 'Dabigatran 150mg twice daily'];
+        explanation = 'Direct oral anticoagulants may be safer alternatives with fewer monitoring requirements.';
+      }
 
-    updateMedicine(medicine.id, 'compatibilityScore', score);
-    updateMedicine(medicine.id, 'status', status);
-    updateMedicine(medicine.id, 'sideEffects', sideEffects);
-    updateMedicine(medicine.id, 'warnings', warnings);
+      return {
+        score,
+        status,
+        reasons,
+        alternatives,
+        riskLevel,
+        explanation
+      };
+    };
+
+    const results = generateCompatibilityResults();
+    
+    // Update the medicine with all compatibility data
+    updateMedicine(medicine.id, 'compatibilityScore', results.score);
+    updateMedicine(medicine.id, 'status', results.status);
+    
+    // Show the enhanced compatibility checker
+    const compatibilityResult = {
+      medicine: medicine.name,
+      score: results.score,
+      status: results.status,
+      reasons: results.reasons,
+      alternatives: results.alternatives,
+      riskLevel: results.riskLevel,
+      explanation: results.explanation
+    };
+    
+    setCompatibilityResults([compatibilityResult]);
+    setShowCompatibilityCheck(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -263,9 +350,9 @@ export const PrescriptionEditor = () => {
                           </Button>
                         </div>
 
-                        {medicine.compatibilityScore > 0 && (
+                         {medicine.compatibilityScore > 0 && (
                           <div className="p-3 rounded-lg bg-background/30 border border-white/10">
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center space-x-2">
                                 <span className={getStatusColor(medicine.status)}>
                                   {getStatusIcon(medicine.status)}
@@ -277,6 +364,31 @@ export const PrescriptionEditor = () => {
                                               medicine.status === 'caution' ? 'secondary' : 'destructive'}>
                                   {medicine.status}
                                 </Badge>
+                              </div>
+                            </div>
+                            
+                            {/* Enhanced Progress Bar */}
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-muted-foreground">AI Compatibility Analysis</span>
+                                <span className="text-xs font-medium text-foreground">{medicine.compatibilityScore}%</span>
+                              </div>
+                              <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    medicine.compatibilityScore >= 85 ? 'bg-success' :
+                                    medicine.compatibilityScore >= 70 ? 'bg-warning' :
+                                    'bg-destructive'
+                                  }`}
+                                  style={{ 
+                                    width: `${medicine.compatibilityScore}%`,
+                                    background: medicine.compatibilityScore >= 85 ? 
+                                      'linear-gradient(90deg, hsl(var(--success)), hsl(var(--success) / 0.8))' :
+                                      medicine.compatibilityScore >= 70 ?
+                                      'linear-gradient(90deg, hsl(var(--warning)), hsl(var(--warning) / 0.8))' :
+                                      'linear-gradient(90deg, hsl(var(--destructive)), hsl(var(--destructive) / 0.8))'
+                                  }}
+                                />
                               </div>
                             </div>
                             
@@ -332,6 +444,23 @@ export const PrescriptionEditor = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Enhanced AI Compatibility Checker */}
+      {showCompatibilityCheck && compatibilityResults.length > 0 && (
+        <CompatibilityChecker 
+          results={compatibilityResults}
+          onOverride={(medicine, reason) => {
+            console.log(`Override for ${medicine}: ${reason}`);
+            setShowCompatibilityCheck(false);
+          }}
+          onShowAlternatives={(medicine) => {
+            const result = compatibilityResults.find(r => r.medicine === medicine);
+            if (result?.alternatives) {
+              alert(`Alternative medicines for ${medicine}:\n${result.alternatives.join('\n')}`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
