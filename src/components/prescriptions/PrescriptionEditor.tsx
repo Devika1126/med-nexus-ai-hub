@@ -46,6 +46,7 @@ export const PrescriptionEditor = () => {
   const [showCompatibilityCheck, setShowCompatibilityCheck] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
   const [compatibilityResults, setCompatibilityResults] = useState<any[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState<string | null>(null);
 
   // Mock patient report data
   const patientReport: PatientReport = {
@@ -82,7 +83,7 @@ export const PrescriptionEditor = () => {
   };
 
   const analyzeCompatibility = (medicine: Medicine) => {
-    // Enhanced AI analysis with synthetic data generation
+    // Enhanced AI analysis with comprehensive synthetic data generation
     const generateCompatibilityResults = () => {
       const medicineName = medicine.name.toLowerCase();
       let score = 85;
@@ -92,19 +93,38 @@ export const PrescriptionEditor = () => {
       let riskLevel: 'low' | 'moderate' | 'high' = 'low';
       let explanation = '';
 
-      // Comprehensive drug interaction logic
-      if (medicineName.includes('ibuprofen')) {
+      // Default case for any medicine not specifically handled
+      if (!medicineName || medicineName.trim() === '') {
+        score = 50;
+        status = 'caution';
+        riskLevel = 'moderate';
+        reasons = ['Medicine name required for proper analysis'];
+        alternatives = ['Please specify medicine name'];
+        explanation = 'Cannot perform compatibility analysis without medicine name.';
+        return { score, status, reasons, alternatives, riskLevel, explanation };
+      }
+
+      // Comprehensive drug interaction logic based on patient profile
+      if (medicineName.includes('ibuprofen') || medicineName.includes('nsaid')) {
         if (patientReport.creatinine > 1.5) {
           score = 25;
           status = 'unsafe';
           riskLevel = 'high';
           reasons = [
-            'Elevated creatinine (1.8 mg/dL) indicates kidney impairment',
+            `Elevated creatinine (${patientReport.creatinine} mg/dL) indicates kidney impairment`,
             'NSAIDs can worsen kidney function and cause acute kidney injury',
-            'Patient\'s blood pressure is already elevated (140/90)'
+            `Patient's blood pressure is elevated (${patientReport.bloodPressure})`,
+            'Risk of fluid retention and cardiovascular events'
           ];
-          alternatives = ['Acetaminophen 500mg', 'Topical diclofenac gel', 'Physical therapy'];
-          explanation = 'Given the patient\'s elevated creatinine levels, ibuprofen poses significant nephrotoxic risk and should be avoided.';
+          alternatives = ['Acetaminophen 500mg TID', 'Topical diclofenac gel', 'Physical therapy', 'Heat/cold therapy'];
+          explanation = 'Given the patient\'s elevated creatinine levels, NSAIDs pose significant nephrotoxic risk and should be avoided. Safer alternatives are recommended.';
+        } else {
+          score = 65;
+          status = 'caution';
+          riskLevel = 'moderate';
+          reasons = ['Monitor kidney function', 'Short-term use only', 'Take with food'];
+          alternatives = ['Acetaminophen 500mg', 'Topical preparations'];
+          explanation = 'NSAIDs can be used with caution but require monitoring.';
         }
       } else if (medicineName.includes('metformin')) {
         if (patientReport.creatinine > 1.4) {
@@ -112,58 +132,124 @@ export const PrescriptionEditor = () => {
           status = 'caution';
           riskLevel = 'moderate';
           reasons = [
-            'Elevated creatinine may increase lactic acidosis risk',
-            'Kidney function needs close monitoring',
-            'Consider dose adjustment based on eGFR'
+            `Elevated creatinine (${patientReport.creatinine} mg/dL) may increase lactic acidosis risk`,
+            'Kidney function needs close monitoring every 3-6 months',
+            'Consider dose reduction to 500mg daily',
+            'Contraindicated if eGFR < 30 mL/min/1.73m²'
           ];
-          alternatives = ['Empagliflozin 10mg', 'Sitagliptin 50mg', 'Insulin therapy'];
-          explanation = 'Metformin can be used with caution but requires dose adjustment and frequent kidney function monitoring.';
+          alternatives = ['Empagliflozin 10mg daily', 'Sitagliptin 50mg daily', 'Insulin therapy', 'Lifestyle modifications'];
+          explanation = 'Metformin can be used with caution but requires dose adjustment and frequent kidney function monitoring due to elevated creatinine.';
+        } else {
+          score = 92;
+          status = 'safe';
+          riskLevel = 'low';
+          reasons = ['First-line diabetes medication', 'Cardiovascular protective', 'Well tolerated'];
+          alternatives = ['Continue current therapy'];
+          explanation = 'Metformin is safe and appropriate for this patient.';
         }
       } else if (medicineName.includes('aspirin')) {
         score = 88;
         status = 'safe';
         riskLevel = 'low';
         reasons = [
-          'Low-dose aspirin is generally well tolerated',
-          'Benefits outweigh risks for cardiovascular protection',
-          'Monitor for GI symptoms'
+          'Low-dose aspirin (75-100mg) is generally well tolerated',
+          `Benefits outweigh risks for cardiovascular protection with BP ${patientReport.bloodPressure}`,
+          'Monitor for GI symptoms',
+          'Antiplatelet effect beneficial for hypertension'
         ];
-        alternatives = ['Clopidogrel 75mg', 'Atorvastatin 20mg'];
-        explanation = 'Aspirin is safe for this patient profile and provides cardiovascular benefits.';
-      } else if (medicineName.includes('lisinopril') || medicineName.includes('ace')) {
+        alternatives = ['Clopidogrel 75mg daily', 'Atorvastatin 20mg daily', 'Lifestyle modifications'];
+        explanation = 'Aspirin is safe for this patient profile and provides cardiovascular benefits, especially given the elevated blood pressure.';
+      } else if (medicineName.includes('lisinopril') || medicineName.includes('ace') || medicineName.includes('enalapril')) {
         if (patientReport.creatinine > 1.5) {
           score = 55;
           status = 'caution';
           riskLevel = 'moderate';
           reasons = [
-            'ACE inhibitors can further elevate creatinine',
-            'Start with low dose and monitor closely',
-            'May cause hyperkalemia'
+            `ACE inhibitors can further elevate creatinine from ${patientReport.creatinine} mg/dL`,
+            'Start with low dose (2.5-5mg) and monitor closely',
+            'May cause hyperkalemia - monitor potassium levels',
+            'Recheck creatinine in 1-2 weeks after initiation'
           ];
-          alternatives = ['Amlodipine 5mg', 'Hydrochlorothiazide 25mg', 'Losartan 50mg'];
-          explanation = 'ACE inhibitors require careful monitoring in patients with kidney impairment.';
+          alternatives = ['Amlodipine 5mg daily', 'Hydrochlorothiazide 25mg daily', 'Losartan 50mg daily', 'Lifestyle modifications'];
+          explanation = 'ACE inhibitors require careful monitoring in patients with kidney impairment but may still be beneficial.';
         } else {
           score = 92;
           status = 'safe';
           riskLevel = 'low';
           reasons = [
-            'Excellent choice for hypertension management',
-            'Kidney protective in diabetes',
-            'Well-tolerated first-line therapy'
+            `Excellent choice for hypertension management (current BP: ${patientReport.bloodPressure})`,
+            'Kidney protective in diabetes and hypertension',
+            'Well-tolerated first-line therapy',
+            'Reduces cardiovascular mortality'
           ];
-          explanation = 'ACE inhibitors are ideal for this patient\'s blood pressure control.';
+          alternatives = ['ARBs if ACE cough develops', 'Amlodipine for combination therapy'];
+          explanation = 'ACE inhibitors are ideal for this patient\'s blood pressure control and cardiovascular protection.';
         }
       } else if (medicineName.includes('warfarin')) {
         score = 40;
         status = 'caution';
         riskLevel = 'moderate';
         reasons = [
-          'Requires frequent INR monitoring',
+          'Requires frequent INR monitoring (weekly initially)',
           'Multiple drug and food interactions',
-          'Patient\'s kidney function may affect metabolism'
+          `Patient's kidney function (creatinine ${patientReport.creatinine}) may affect metabolism`,
+          'Bleeding risk assessment needed'
         ];
-        alternatives = ['Apixaban 5mg twice daily', 'Rivaroxaban 20mg daily', 'Dabigatran 150mg twice daily'];
-        explanation = 'Direct oral anticoagulants may be safer alternatives with fewer monitoring requirements.';
+        alternatives = ['Apixaban 5mg twice daily', 'Rivaroxaban 20mg daily', 'Dabigatran 150mg twice daily', 'Edoxaban 60mg daily'];
+        explanation = 'Direct oral anticoagulants (DOACs) may be safer alternatives with fewer monitoring requirements and drug interactions.';
+      } else if (medicineName.includes('insulin')) {
+        score = 95;
+        status = 'safe';
+        riskLevel = 'low';
+        reasons = [
+          `Safe with current glucose level (${patientReport.glucose} mg/dL)`,
+          'No kidney-related contraindications',
+          'Effective for diabetes management',
+          'Dosing can be adjusted based on response'
+        ];
+        alternatives = ['GLP-1 agonists', 'SGLT-2 inhibitors (if eGFR >30)'];
+        explanation = 'Insulin is safe and effective for this patient regardless of kidney function.';
+      } else if (medicineName.includes('amlodipine') || medicineName.includes('calcium channel blocker')) {
+        score = 90;
+        status = 'safe';
+        riskLevel = 'low';
+        reasons = [
+          `Excellent for hypertension control (current BP: ${patientReport.bloodPressure})`,
+          'Safe with kidney impairment',
+          'No dose adjustment needed',
+          'Effective antihypertensive'
+        ];
+        alternatives = ['ACE inhibitors', 'Thiazide diuretics'];
+        explanation = 'Calcium channel blockers are safe and effective for blood pressure control in patients with kidney impairment.';
+      } else {
+        // Generic analysis for unspecified medicines
+        const hasKidneyIssues = patientReport.creatinine > 1.5;
+        const hasHypertension = patientReport.bloodPressure !== "120/80";
+        
+        if (hasKidneyIssues) {
+          score = 60;
+          status = 'caution';
+          riskLevel = 'moderate';
+          reasons = [
+            `Patient has elevated creatinine (${patientReport.creatinine} mg/dL)`,
+            'Consider dose adjustment for kidney impairment',
+            'Monitor kidney function regularly',
+            'Avoid nephrotoxic combinations'
+          ];
+          alternatives = ['Kidney-safe alternatives', 'Dose-adjusted regimen', 'Non-pharmacological approaches'];
+          explanation = 'Due to patient\'s kidney impairment, careful medication selection and monitoring is required.';
+        } else {
+          score = 85;
+          status = 'safe';
+          riskLevel = 'low';
+          reasons = [
+            'Normal kidney function supports safe use',
+            'Standard dosing appropriate',
+            'Regular monitoring recommended'
+          ];
+          alternatives = ['Continue as prescribed'];
+          explanation = 'Based on patient profile, this medication appears safe with standard monitoring.';
+        }
       }
 
       return {
@@ -176,41 +262,59 @@ export const PrescriptionEditor = () => {
       };
     };
 
-    const results = generateCompatibilityResults();
-    
-    // Update the medicine with all compatibility data
-    updateMedicine(medicine.id, 'compatibilityScore', results.score);
-    updateMedicine(medicine.id, 'status', results.status);
-    
-    // Convert reasons to warnings and sideEffects for inline display
-    const warnings = results.reasons.filter(reason => 
-      reason.includes('risk') || reason.includes('caution') || reason.includes('monitor')
-    );
-    const sideEffects = results.status === 'unsafe' ? 
-      ['Potential adverse reactions', 'Monitor closely'] : 
-      results.status === 'caution' ? 
-      ['Mild side effects possible', 'Regular monitoring advised'] :
-      ['Generally well tolerated'];
-    
-    updateMedicine(medicine.id, 'warnings', warnings);
-    updateMedicine(medicine.id, 'sideEffects', sideEffects);
-    
-    // Show the enhanced compatibility checker
-    const compatibilityResult = {
-      medicine: medicine.name,
-      score: results.score,
-      status: results.status,
-      reasons: results.reasons,
-      alternatives: results.alternatives,
-      riskLevel: results.riskLevel,
-      explanation: results.explanation
+    // Simulate AI processing delay for realism
+    const processAnalysis = () => {
+      setIsAnalyzing(medicine.id); // Set loading state
+      
+      const results = generateCompatibilityResults();
+      
+      // Update the medicine with all compatibility data
+      updateMedicine(medicine.id, 'compatibilityScore', results.score);
+      updateMedicine(medicine.id, 'status', results.status);
+      
+      // Enhanced warnings and side effects based on results
+      const warnings = results.reasons.filter(reason => 
+        reason.toLowerCase().includes('risk') || 
+        reason.toLowerCase().includes('caution') || 
+        reason.toLowerCase().includes('monitor') ||
+        reason.toLowerCase().includes('contraindicated')
+      );
+      
+      const sideEffects = results.status === 'unsafe' ? 
+        ['Potential serious adverse reactions', 'Requires immediate alternatives', 'Close monitoring essential'] : 
+        results.status === 'caution' ? 
+        ['Mild to moderate side effects possible', 'Regular monitoring advised', 'Dose adjustments may be needed'] :
+        ['Generally well tolerated', 'Minimal side effects expected', 'Standard monitoring sufficient'];
+      
+      updateMedicine(medicine.id, 'warnings', warnings);
+      updateMedicine(medicine.id, 'sideEffects', sideEffects);
+      
+      // Create comprehensive compatibility result for detailed view
+      const compatibilityResult = {
+        medicine: medicine.name || 'Unknown Medicine',
+        score: results.score,
+        status: results.status,
+        reasons: results.reasons,
+        alternatives: results.alternatives,
+        riskLevel: results.riskLevel,
+        explanation: results.explanation
+      };
+      
+      setCompatibilityResults([compatibilityResult]);
+      setShowCompatibilityCheck(true);
+      setIsAnalyzing(null); // Clear loading state
+      
+      // Log analysis for debugging
+      console.log('🧠 AI Compatibility Analysis Complete:', {
+        medicine: medicine.name,
+        score: results.score,
+        status: results.status,
+        patientProfile: patientReport
+      });
     };
-    
-    setCompatibilityResults([compatibilityResult]);
-    setShowCompatibilityCheck(true);
-    
-    // Add console log to verify it's working
-    console.log('AI Compatibility Check completed for:', medicine.name, results);
+
+    // Add slight delay to simulate AI processing
+    setTimeout(processAnalysis, 500);
   };
 
   const getStatusColor = (status: string) => {
@@ -352,9 +456,10 @@ export const PrescriptionEditor = () => {
                             size="sm" 
                             variant="outline"
                             className="glass-button"
+                            disabled={isAnalyzing === medicine.id}
                           >
                             <Brain className="w-4 h-4 mr-2" />
-                            Check AI Compatibility
+                            {isAnalyzing === medicine.id ? 'Analyzing...' : 'Check AI Compatibility'}
                           </Button>
                           <Button 
                             onClick={() => removeMedicine(medicine.id)}
