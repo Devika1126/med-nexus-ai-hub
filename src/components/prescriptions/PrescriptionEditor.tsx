@@ -182,6 +182,19 @@ export const PrescriptionEditor = () => {
     updateMedicine(medicine.id, 'compatibilityScore', results.score);
     updateMedicine(medicine.id, 'status', results.status);
     
+    // Convert reasons to warnings and sideEffects for inline display
+    const warnings = results.reasons.filter(reason => 
+      reason.includes('risk') || reason.includes('caution') || reason.includes('monitor')
+    );
+    const sideEffects = results.status === 'unsafe' ? 
+      ['Potential adverse reactions', 'Monitor closely'] : 
+      results.status === 'caution' ? 
+      ['Mild side effects possible', 'Regular monitoring advised'] :
+      ['Generally well tolerated'];
+    
+    updateMedicine(medicine.id, 'warnings', warnings);
+    updateMedicine(medicine.id, 'sideEffects', sideEffects);
+    
     // Show the enhanced compatibility checker
     const compatibilityResult = {
       medicine: medicine.name,
@@ -195,6 +208,9 @@ export const PrescriptionEditor = () => {
     
     setCompatibilityResults([compatibilityResult]);
     setShowCompatibilityCheck(true);
+    
+    // Add console log to verify it's working
+    console.log('AI Compatibility Check completed for:', medicine.name, results);
   };
 
   const getStatusColor = (status: string) => {
