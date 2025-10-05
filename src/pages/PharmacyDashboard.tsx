@@ -87,8 +87,8 @@ const PharmacyDashboard = () => {
         <div className="w-64 border-r border-white/10 backdrop-blur-xl">
           <div className="p-6 border-b border-white/10">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6 text-primary-foreground" />
+              <div className="w-10 h-10 bg-pharmacy/20 rounded-lg flex items-center justify-center">
+                <Store className="w-6 h-6 text-pharmacy" />
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-foreground">Pharmacy Portal</h1>
@@ -103,7 +103,7 @@ const PharmacyDashboard = () => {
                 key={item.id}
                 variant={activeTab === item.id ? "secondary" : "ghost"}
                 className={`w-full justify-start ${
-                  activeTab === item.id ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
+                  activeTab === item.id ? 'bg-pharmacy/20 text-pharmacy' : 'text-muted-foreground hover:text-foreground'
                 }`}
                 onClick={() => setActiveTab(item.id)}
               >
@@ -163,10 +163,10 @@ const PharmacyDashboard = () => {
                             <p className="text-3xl font-bold text-foreground">{stat.value}</p>
                           </div>
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                            stat.color === 'primary' ? 'bg-primary/20 text-primary' :
+                            stat.color === 'primary' ? 'bg-pharmacy/20 text-pharmacy' :
                             stat.color === 'warning' ? 'bg-warning/20 text-warning' :
                             stat.color === 'success' ? 'bg-success/20 text-success' :
-                            'bg-lab/20 text-lab'
+                            'bg-pharmacy/20 text-pharmacy'
                           }`}>
                             <stat.icon className="w-6 h-6" />
                           </div>
@@ -180,7 +180,7 @@ const PharmacyDashboard = () => {
                 <Card className="glass-card border-white/10">
                   <CardHeader>
                     <CardTitle className="flex items-center text-foreground">
-                      <Package className="w-5 h-5 mr-2 text-warning" />
+                      <AlertTriangle className="w-5 h-5 mr-2 text-warning" />
                       Stock Alerts
                     </CardTitle>
                   </CardHeader>
@@ -229,8 +229,8 @@ const PharmacyDashboard = () => {
                       {recentOrders.map((order) => (
                         <div key={order.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/20 transition-colors">
                           <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                              <Package className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 bg-pharmacy/20 rounded-full flex items-center justify-center">
+                              <Package className="w-5 h-5 text-pharmacy" />
                             </div>
                             <div>
                               <p className="font-medium text-foreground">{order.id}</p>
