@@ -287,7 +287,59 @@ const PatientDashboard = () => {
             )}
 
             {activeTab === "prescriptions" && (
-              <PatientPrescriptionView />
+              <div className="space-y-6">
+                <PatientPrescriptionView />
+              </div>
+            )}
+
+            {activeTab === "medications" && (
+              <Card className="glass-card border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-foreground">
+                    <span className="flex items-center">
+                      <Pill className="w-5 h-5 mr-2" />
+                      My Medications
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {currentMedications.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No active medications</p>
+                    ) : (
+                      currentMedications.map((med, index) => (
+                        <div key={index} className="p-4 rounded-lg bg-muted/20 border border-white/10">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-3 h-3 bg-patient rounded-full"></div>
+                                <div>
+                                  <p className="font-semibold text-foreground text-lg">{med.name}</p>
+                                  <p className="text-sm text-muted-foreground">{med.dosage} • {med.frequency}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-foreground">Next: {med.nextDose}</p>
+                              <Badge variant="outline" className="mt-1">
+                                {med.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button size="sm" variant="outline" className="glass-button">
+                              Set Reminder
+                            </Button>
+                            <Button size="sm" variant="outline" className="glass-button">
+                              View Details
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {activeTab === "appointments" && (

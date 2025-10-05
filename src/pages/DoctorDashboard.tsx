@@ -231,13 +231,29 @@ const DoctorDashboard = () => {
               <PrescriptionEditor />
             )}
 
-            {activeTab !== "overview" && activeTab !== "prescriptions" && (
+            {activeTab === "patients" && (
+              <PatientsPanel />
+            )}
+
+            {activeTab === "reports" && (
+              <ReportsPanel />
+            )}
+
+            {activeTab === "ai-suggestions" && (
+              <AISuggestions />
+            )}
+
+            {activeTab === "calendar" && (
+              <Schedule />
+            )}
+
+            {activeTab === "settings" && (
               <div className="text-center py-20">
                 <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-muted-foreground" />
+                  <Settings className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">
-                  {sidebarItems.find(item => item.id === activeTab)?.label}
+                  Settings
                 </h3>
                 <p className="text-muted-foreground">This section is under development</p>
               </div>

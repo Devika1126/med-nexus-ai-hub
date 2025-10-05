@@ -52,6 +52,7 @@
     --doctor: 210 80% 55%;
     --patient: 145 70% 50%;
     --lab: 280 70% 60%;
+    --pharmacy: 45 90% 60%;
 
     /* Glass Effects */
     --glass-bg: 215 20% 8% / 0.8;
@@ -125,6 +126,10 @@
 
   .glow-lab {
     box-shadow: 0 0 20px hsl(var(--lab) / 0.3);
+  }
+
+  .glow-pharmacy {
+    box-shadow: 0 0 20px hsl(var(--pharmacy) / 0.3);
   }
 
   /* Animated Gradients */

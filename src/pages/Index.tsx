@@ -35,6 +35,15 @@ const Index = () => {
       icon: FlaskConical,
       color: "lab",
       route: "/login/lab"
+    },
+    {
+      id: "pharmacy",
+      title: "Pharmacy Portal",
+      subtitle: "Verified Pharmacy Stores",
+      description: "Manage inventory, process prescriptions, and provide medicine availability",
+      icon: FlaskConical,
+      color: "pharmacy",
+      route: "/login/pharmacy"
     }
   ];
 
@@ -120,7 +129,7 @@ const Index = () => {
             <p className="text-muted-foreground">Select your role to access your personalized dashboard</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {userRoles.map((role) => (
               <Card
                 key={role.id}
@@ -135,7 +144,8 @@ const Index = () => {
                   <div className={`w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center group-hover:scale-110 smooth-transition ${
                     role.color === 'doctor' ? 'bg-doctor/20 text-doctor' :
                     role.color === 'patient' ? 'bg-patient/20 text-patient' :
-                    'bg-lab/20 text-lab'
+                    role.color === 'lab' ? 'bg-lab/20 text-lab' :
+                    'bg-pharmacy/20 text-pharmacy'
                   }`}>
                     <role.icon className="w-8 h-8" />
                   </div>
@@ -144,7 +154,8 @@ const Index = () => {
                   <p className={`text-sm font-medium mb-4 ${
                     role.color === 'doctor' ? 'text-doctor' :
                     role.color === 'patient' ? 'text-patient' :
-                    'text-lab'
+                    role.color === 'lab' ? 'text-lab' :
+                    'text-pharmacy'
                   }`}>
                     {role.subtitle}
                   </p>
@@ -156,7 +167,8 @@ const Index = () => {
                     className={`w-full group-hover:scale-105 smooth-transition ${
                       role.color === 'doctor' ? 'bg-doctor hover:bg-doctor/90' :
                       role.color === 'patient' ? 'bg-patient hover:bg-patient/90' :
-                      'bg-lab hover:bg-lab/90'
+                      role.color === 'lab' ? 'bg-lab hover:bg-lab/90' :
+                      'bg-pharmacy hover:bg-pharmacy/90'
                     }`}
                   >
                     Access Portal

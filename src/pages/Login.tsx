@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Stethoscope, Users, FlaskConical, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Stethoscope, Users, FlaskConical, ArrowLeft, Eye, EyeOff, Pill } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -54,6 +54,14 @@ const Login = () => {
       color: "lab",
       loginField: "NABL ID",
       placeholder: "Enter your NABL ID"
+    },
+    pharmacy: {
+      title: "Pharmacy Portal",
+      subtitle: "Verified Pharmacy Stores",
+      icon: FlaskConical,
+      color: "pharmacy",
+      loginField: "Pharmacy License ID",
+      placeholder: "Enter your pharmacy license ID"
     }
   };
 
@@ -138,7 +146,8 @@ const Login = () => {
               <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center ${
                 config.color === 'doctor' ? 'bg-doctor/20 text-doctor glow-doctor' :
                 config.color === 'patient' ? 'bg-patient/20 text-patient glow-patient' :
-                'bg-lab/20 text-lab glow-lab'
+                config.color === 'lab' ? 'bg-lab/20 text-lab glow-lab' :
+                'bg-pharmacy/20 text-pharmacy glow-pharmacy'
               }`}>
                 <config.icon className="w-8 h-8" />
               </div>
@@ -146,7 +155,8 @@ const Login = () => {
               <p className={`text-sm ${
                 config.color === 'doctor' ? 'text-doctor' :
                 config.color === 'patient' ? 'text-patient' :
-                'text-lab'
+                config.color === 'lab' ? 'text-lab' :
+                'text-pharmacy'
               }`}>
                 {config.subtitle}
               </p>
@@ -207,7 +217,8 @@ const Login = () => {
                       className={`w-full ${
                         config.color === 'doctor' ? 'bg-doctor hover:bg-doctor/90' :
                         config.color === 'patient' ? 'bg-patient hover:bg-patient/90' :
-                        'bg-lab hover:bg-lab/90'
+                        config.color === 'lab' ? 'bg-lab hover:bg-lab/90' :
+                        'bg-pharmacy hover:bg-pharmacy/90'
                       }`}
                       disabled={isLoading}
                     >
@@ -323,7 +334,8 @@ const Login = () => {
                       className={`w-full ${
                         config.color === 'doctor' ? 'bg-doctor hover:bg-doctor/90' :
                         config.color === 'patient' ? 'bg-patient hover:bg-patient/90' :
-                        'bg-lab hover:bg-lab/90'
+                        config.color === 'lab' ? 'bg-lab hover:bg-lab/90' :
+                        'bg-pharmacy hover:bg-pharmacy/90'
                       }`}
                       disabled={isLoading}
                     >
